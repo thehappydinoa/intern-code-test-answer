@@ -30,12 +30,18 @@ def status(status):
 # Tries to return results of string `command`
 # Catches ProgrammingError and InternalError (Value Errors and Existence)
 # Boolean `fetchall` describes how many responses are expected
-def psql_command(command, fetchall=False):
+def psql_command(command, input=False, fetchall=False):
     if not command.endswith(';'):
         command = command + ';'
     cur = conn.cursor()
     try:
-        cur.execute(command)
+        if input:
+            if not ';' in str(input):
+                cur.execute(command, input)
+            else:
+                raise InternalError("SQL Injection attempt")
+        else:
+            cur.execute(command)
         if fetchall:
             response = cur.fetchall()
         else:
@@ -77,7 +83,7 @@ def get_items():
 # Tries to return a serialized json object of the item with the id of string 'id'
 # Catches IndexError (Value Errors and Existence)
 def get_item(id):
-    response = psql_command("SELECT * FROM items WHERE ID = %s;" % id)
+    response = psql_command("SELECT * FROM items WHERE ID = %s;", input=(id,))
     try:
         result = serializeItem(response)
         return jsonify(result)
@@ -85,13 +91,14 @@ def get_item(id):
         result = status(False)
         return result
 
+
 # Creates and returns a serialized json object of the item created
 def add_item(item):
     item = loads(item)
     title = item["item"]["title"]
     categoryId = item["item"]["categoryId"]
     response = psql_command(
-        "INSERT INTO items(title, category_id) VALUES('%s', '%s') returning *;" % (title, categoryId))
+        "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;", input=(title, categoryId))
     return jsonify(serializeItem(response))
 
 
@@ -100,7 +107,7 @@ def edit_item(id, data):
     title = loads(data)["item"]["title"]
     updated_at = datetime.utcnow().isoformat()
     response = psql_command(
-        "UPDATE items SET title = '%s', updated_at = '%s' WHERE ID = %s returning *;" % (title, updated_at, id))
+        "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", input=(title, updated_at, id))
     return jsonify(serializeItem(response))
 
 
