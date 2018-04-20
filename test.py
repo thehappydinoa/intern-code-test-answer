@@ -2,7 +2,7 @@
 import json
 import unittest
 import requests
-from datetime import datetime, timezone
+from datetime import timezone
 from psycopg2 import connect, OperationalError, ProgrammingError, InternalError
 
 from settings import config
@@ -100,8 +100,8 @@ class FlaskTestCase(unittest.TestCase):
         assert 'OK' in r.json()['status']
 
     def test_get_items(self):
-        item1 = add_item()
-        item2 = add_item()
+        add_item()
+        add_item()
         expected = json.dumps(get_items())
         r = requests.get(self.base_url + '/items')
         assert str(r.status_code) in "200"
