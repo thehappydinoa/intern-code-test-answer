@@ -30,14 +30,14 @@ def status(status):
 # Tries to return results of string `command`
 # Catches ProgrammingError and InternalError (Value Errors and Existence)
 # Boolean `fetchall` describes how many responses are expected
-def psql_command(command, input=False, fetchall=False):
+def psql_command(command, values=False, fetchall=False):
     if not command.endswith(';'):
         command = command + ';'
     cur = conn.cursor()
     try:
-        if input:
-            if not ';' in str(input):
-                cur.execute(command, input)
+        if values:
+            if not ';' in str(values):
+                cur.execute(command, values)
             else:
                 raise InternalError("SQL Injection attempt")
         else:
@@ -81,11 +81,12 @@ def get_items():
     return jsonify(result)
 
 
-# Tries to return a serialized json object of the item with the id of string 'id'
+# Tries to return a serialized json object of the item with the id of string 'item_id'
 # Catches IndexError (Value Errors and Existence)
-@app.route('/items/<string:id>', methods=['GET'])
-def get_item(id):
-    response = psql_command("SELECT * FROM items WHERE ID = %s;", input=(id,))
+@app.route('/items/<string:item_id>', methods=['GET'])
+def get_item(item_id):
+    response = psql_command(
+        "SELECT * FROM items WHERE ID = %s;", values=(item_id,))
     try:
         result = serializeItem(response)
         return jsonify(result)
@@ -101,27 +102,27 @@ def add_item():
     title = item["item"]["title"]
     categoryId = item["item"]["categoryId"]
     response = psql_command(
-        "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;", input=(title, categoryId))
+        "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;", values=(title, categoryId))
     return jsonify(serializeItem(response))
 
 
 # Edits and returns a serialized json object of the item updated
-@app.route('/items/<string:id>', methods=['PUT'])
-def edit_item(id):
+@app.route('/items/<string:item_id>', methods=['PUT'])
+def edit_item(item_id):
     title = loads(request.data)["item"]["title"]
     updated_at = datetime.utcnow().isoformat()
     response = psql_command(
-        "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", input=(title, updated_at, id))
+        "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", values=(title, updated_at, item_id))
     return jsonify(serializeItem(response))
 
 
-# Tries to delete the item with id of string 'id' and returns {}
+# Tries to delete the item with id of string 'item_id' and returns {}
 # Catches Exception (Value Errors and Existence)
-@app.route('/items/<string:id>', methods=['DELETE'])
-def delete_item(id):
+@app.route('/items/<string:item_id>', methods=['DELETE'])
+def delete_item(item_id):
     try:
-        response = psql_command(
-            "DELETE FROM items WHERE id = %s returning *;" % id)
+        psql_command(
+            "DELETE FROM items WHERE id = %s returning *;", values=(item_id,))
         result = {}
         return jsonify(result)
     except Exception as e:
