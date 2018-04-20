@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from json import loads
+from json import loads, dumps
 from datetime import datetime, timezone
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from psycopg2 import connect, ProgrammingError, OperationalError, InternalError
 
 # Gets config from settings.py
@@ -24,8 +24,8 @@ except OperationalError as e:
 # Returns json describing the status of boolean 'status'
 def status(status):
     if status:
-        return jsonify({'status': 'OK'})
-    return jsonify({'status': 'BAD'})
+        return dumps({'status': 'OK'})
+    return dumps({'status': 'BAD'})
 
 # Tries to return results of string `command`
 # Catches ProgrammingError and InternalError (Value Errors and Existence)
@@ -78,7 +78,7 @@ def get_items():
     for item in response:
         itemsList.append(serializeItem(item)['item'])
     result = {"items": itemsList}
-    return jsonify(result)
+    return dumps(result)
 
 
 # Tries to return a serialized json object of the item with the id of string 'item_id'
@@ -89,7 +89,7 @@ def get_item(item_id):
         "SELECT * FROM items WHERE ID = %s;", values=(item_id,))
     try:
         result = serializeItem(response)
-        return jsonify(result)
+        return dumps(result)
     except IndexError:
         result = status(False)
         return result
@@ -103,7 +103,7 @@ def add_item():
     categoryId = item["item"]["categoryId"]
     response = psql_command(
         "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;", values=(title, categoryId))
-    return jsonify(serializeItem(response))
+    return dumps(serializeItem(response))
 
 
 # Edits and returns a serialized json object of the item updated
@@ -113,7 +113,7 @@ def edit_item(item_id):
     updated_at = datetime.utcnow().isoformat()
     response = psql_command(
         "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", values=(title, updated_at, item_id))
-    return jsonify(serializeItem(response))
+    return dumps(serializeItem(response))
 
 
 # Tries to delete the item with id of string 'item_id' and returns {}
@@ -124,7 +124,7 @@ def delete_item(item_id):
         psql_command(
             "DELETE FROM items WHERE id = %s returning *;", values=(item_id,))
         result = {}
-        return jsonify(result)
+        return dumps(result)
     except Exception as e:
         print("Failed Delete")
         print(str(e))
@@ -134,7 +134,7 @@ def delete_item(item_id):
 # Handles 404 errors
 @app.errorhandler(404)
 def error_404(error):
-    return jsonify({"error": str(error)}), 404
+    return dumps({"error": str(error)}), 404
 
 
 # Handles index route
