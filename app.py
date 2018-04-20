@@ -71,6 +71,7 @@ def serializeItem(item):
 
 
 # Returns array of all items in table `items`
+@app.route('/items', methods=['GET'])
 def get_items():
     response = psql_command("SELECT * FROM items;", fetchall=True)
     itemsList = []
@@ -82,6 +83,7 @@ def get_items():
 
 # Tries to return a serialized json object of the item with the id of string 'id'
 # Catches IndexError (Value Errors and Existence)
+@app.route('/items/<string:id>', methods=['GET'])
 def get_item(id):
     response = psql_command("SELECT * FROM items WHERE ID = %s;", input=(id,))
     try:
@@ -93,8 +95,9 @@ def get_item(id):
 
 
 # Creates and returns a serialized json object of the item created
-def add_item(item):
-    item = loads(item)
+@app.route('/items', methods=['POST'])
+def add_item():
+    item = loads(request.data)
     title = item["item"]["title"]
     categoryId = item["item"]["categoryId"]
     response = psql_command(
@@ -103,8 +106,9 @@ def add_item(item):
 
 
 # Edits and returns a serialized json object of the item updated
-def edit_item(id, data):
-    title = loads(data)["item"]["title"]
+@app.route('/items/<string:id>', methods=['PUT'])
+def edit_item(id):
+    title = loads(request.data)["item"]["title"]
     updated_at = datetime.utcnow().isoformat()
     response = psql_command(
         "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", input=(title, updated_at, id))
@@ -113,6 +117,7 @@ def edit_item(id, data):
 
 # Tries to delete the item with id of string 'id' and returns {}
 # Catches Exception (Value Errors and Existence)
+@app.route('/items/<string:id>', methods=['DELETE'])
 def delete_item(id):
     try:
         response = psql_command(
@@ -128,36 +133,13 @@ def delete_item(id):
 # Handles 404 errors
 @app.errorhandler(404)
 def error_404(error):
-    return status(False), 404
+    return jsonify({"error": str(error)}), 404
 
 
 # Handles index route
 @app.route("/")
 def index():
     return status(True)
-
-
-# Handles /items route (GET and POST)
-@app.route('/items', methods=['GET', 'POST'])
-def items():
-    if request.method == 'GET':
-        return get_items()
-    elif request.method == 'POST':
-        response = add_item(request.data)
-        return response
-    return status(False)
-
-
-# Handles /items/:id route (GET, POST, PUT, and DELETE)
-@app.route('/items/<string:id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
-def items_methods(id):
-    if request.method == 'GET':
-        return get_item(id)
-    elif request.method == 'PUT':
-        return edit_item(id, request.data)
-    elif request.method == 'DELETE':
-        return delete_item(id)
-    return status(False)
 
 
 # Runs flask app object 'app'
