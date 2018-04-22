@@ -15,8 +15,11 @@ app.secret_key = config["secret_key"]
 # Try to connect to DB using db_config
 # Catches OperationalErrors (Auth Errors and Database Existence)
 try:
-    conn = connect(host=config["db_config"]["host"], dbname=config["db_config"]["dbname"],
-                   user=config["db_config"]["user"], password=config["db_config"]["password"])
+    conn = connect(
+        host=config["db_config"]["host"],
+        dbname=config["db_config"]["dbname"],
+        user=config["db_config"]["user"],
+        password=config["db_config"]["password"])
 except OperationalError as e:
     print(str(e))
     exit(1)
@@ -27,7 +30,7 @@ except OperationalError as e:
 # Boolean `fetchall` describes how many responses are expected
 def psql_command(command, values=False, fetchall=False):
     if not command.endswith(';'):
-        command = command + ';'
+        command += ';'
     cur = conn.cursor()
     try:
         if values and not ';' in str(values):
@@ -54,13 +57,15 @@ def iso8601(time):
 # Returns array that describes the tuple 'item'
 def serializeItem(item):
     if item:
-        return {'item': {
-            'id': item[0],
-            'title': item[1],
-            'categoryId': item[2],
-            'createdAt': iso8601(item[3]),
-            'updatedAt': iso8601(item[4])
-        }}
+        return {
+            'item': {
+                'id': item[0],
+                'title': item[1],
+                'categoryId': item[2],
+                'createdAt': iso8601(item[3]),
+                'updatedAt': iso8601(item[4])
+            }
+        }
 
 
 # Returns array of all items in table `items`
@@ -79,7 +84,7 @@ def get_items():
 @app.route('/items/<string:item_id>', methods=['GET'])
 def get_item(item_id):
     response = psql_command(
-        "SELECT * FROM items WHERE ID = %s;", values=(item_id,))
+        "SELECT * FROM items WHERE ID = %s;", values=(item_id, ))
     try:
         result = serializeItem(response)
         return dumps(result)
@@ -94,7 +99,8 @@ def add_item():
     title = item["item"]["title"]
     categoryId = item["item"]["categoryId"]
     response = psql_command(
-        "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;", values=(title, categoryId))
+        "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;",
+        values=(title, categoryId))
     return dumps(serializeItem(response)), 201
 
 
@@ -104,7 +110,8 @@ def edit_item(item_id):
     title = loads(request.data)["item"]["title"]
     updated_at = datetime.utcnow().isoformat()
     response = psql_command(
-        "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", values=(title, updated_at, item_id))
+        "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;",
+        values=(title, updated_at, item_id))
     return dumps(serializeItem(response)), 200
 
 
@@ -114,7 +121,7 @@ def edit_item(item_id):
 def delete_item(item_id):
     try:
         psql_command(
-            "DELETE FROM items WHERE id = %s returning *;", values=(item_id,))
+            "DELETE FROM items WHERE id = %s returning *;", values=(item_id, ))
         result = {}
         return dumps(result), 200
     except Exception as e:

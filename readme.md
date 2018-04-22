@@ -1,4 +1,4 @@
-# Intern Code Test Response [![Python 2.7](https://img.shields.io/badge/Python-2%20&%203-blue.svg)](https://www.python.org/download/) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b72c1746bc5a47edaa49e864e698cd17)](https://www.codacy.com/app/thehappydinoa/intern-code-test-answer?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=thehappydinoa/intern-code-test-answer&amp;utm_campaign=Badge_Grade)
+# Intern Code Test Response [![Python 2.7](https://img.shields.io/badge/Python-2%20&%203-blue.svg)](https://www.python.org/download/) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b72c1746bc5a47edaa49e864e698cd17)](https://www.codacy.com/app/thehappydinoa/intern-code-test-answer?utm_source=github.com&utm_medium=referral&utm_content=thehappydinoa/intern-code-test-answer&utm_campaign=Badge_Grade)
 
 Response to [Intern Code Test](https://github.com/uprightlabs/intern-code-test)
 
