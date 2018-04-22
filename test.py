@@ -123,7 +123,7 @@ class FlaskTestCase(unittest.TestCase):
         }
         r = requests.post(self.base_url + '/items', data=json.dumps(item))
         expected = get_item(r.json()["item"]["id"])
-        assert str(r.status_code) in "200"
+        assert str(r.status_code) in "201"
         assert expected in r.text
 
     def test_put_item(self):

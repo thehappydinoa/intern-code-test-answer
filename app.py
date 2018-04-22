@@ -21,11 +21,6 @@ except OperationalError as e:
     print(str(e))
     exit(1)
 
-# Returns json describing the status of boolean 'status'
-def status(status):
-    if status:
-        return dumps({'status': 'OK'})
-    return dumps({'status': 'BAD'})
 
 # Tries to return results of string `command`
 # Catches ProgrammingError and InternalError (Value Errors and Existence)
@@ -35,11 +30,8 @@ def psql_command(command, values=False, fetchall=False):
         command = command + ';'
     cur = conn.cursor()
     try:
-        if values:
-            if not ';' in str(values):
-                cur.execute(command, values)
-            else:
-                raise InternalError("SQL Injection attempt")
+        if values and not ';' in str(values):
+            cur.execute(command, values)
         else:
             cur.execute(command)
         if fetchall:
@@ -52,6 +44,7 @@ def psql_command(command, values=False, fetchall=False):
     conn.commit()
     cur.close()
     return response
+
 
 # Returns string that describes the time in ISO8601 UTC
 def iso8601(time):
@@ -78,7 +71,7 @@ def get_items():
     for item in response:
         itemsList.append(serializeItem(item)['item'])
     result = {"items": itemsList}
-    return dumps(result)
+    return dumps(result), 200
 
 
 # Tries to return a serialized json object of the item with the id of string 'item_id'
@@ -91,8 +84,7 @@ def get_item(item_id):
         result = serializeItem(response)
         return dumps(result)
     except IndexError:
-        result = status(False)
-        return result
+        return None, 404
 
 
 # Creates and returns a serialized json object of the item created
@@ -103,7 +95,7 @@ def add_item():
     categoryId = item["item"]["categoryId"]
     response = psql_command(
         "INSERT INTO items(title, category_id) VALUES(%s, %s) returning *;", values=(title, categoryId))
-    return dumps(serializeItem(response))
+    return dumps(serializeItem(response)), 201
 
 
 # Edits and returns a serialized json object of the item updated
@@ -113,7 +105,7 @@ def edit_item(item_id):
     updated_at = datetime.utcnow().isoformat()
     response = psql_command(
         "UPDATE items SET title = %s, updated_at = %s WHERE ID = %s returning *;", values=(title, updated_at, item_id))
-    return dumps(serializeItem(response))
+    return dumps(serializeItem(response)), 200
 
 
 # Tries to delete the item with id of string 'item_id' and returns {}
@@ -124,11 +116,11 @@ def delete_item(item_id):
         psql_command(
             "DELETE FROM items WHERE id = %s returning *;", values=(item_id,))
         result = {}
-        return dumps(result)
+        return dumps(result), 200
     except Exception as e:
         print("Failed Delete")
         print(str(e))
-        return status(False)
+        return None, 404
 
 
 # Handles 404 errors
@@ -140,7 +132,7 @@ def error_404(error):
 # Handles index route
 @app.route("/")
 def index():
-    return status(True)
+    return dumps({'status': 'OK'}), 200
 
 
 # Runs flask app object 'app'
